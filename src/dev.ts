@@ -25,10 +25,13 @@ const watchCommands = async (client: CustomClient, build: typeof Build) => {
 		encoding: "utf8",
 		persistent: false,
 	})) {
+		const { filename } = event;
+
+		if (filename == null) continue;
 		const oldCommand = (
 			await freshImport<{
 				command: CommandOptions;
-			}>(`./${Constants.commandsFolderName}/${event.filename}`)
+			}>(`./${Constants.commandsFolderName}/${filename}`)
 		)?.command;
 
 		if (event.eventType === "rename" && oldCommand) {
@@ -40,23 +43,20 @@ const watchCommands = async (client: CustomClient, build: typeof Build) => {
 
 			unlink(
 				new URL(
-					`${Constants.commandsFolderName}/${event.filename.replace(
-						/\.ts/,
-						".js"
-					)}`,
+					`${Constants.commandsFolderName}/${filename.replace(/\.ts/, ".js")}`,
 					import.meta.url
 				)
 			).catch(printToStderr);
 			printToStdout(
 				ok
-					? `Deleted command ${name} (${event.filename})`
-					: `Couldn't find command ${name} (${event.filename})`
+					? `Deleted command ${name} (${filename})`
+					: `Couldn't find command ${name} (${filename})`
 			);
 			continue;
 		}
 		const failed = await build({
 			config: false,
-			entry: [`src/${Constants.commandsFolderName}/${event.filename}`],
+			entry: [`src/${Constants.commandsFolderName}/${filename}`],
 			format: "esm",
 			external: ["tsup"],
 			minify: true,
@@ -65,7 +65,7 @@ const watchCommands = async (client: CustomClient, build: typeof Build) => {
 			target: "esnext",
 			outDir: join(cwd(), "dist/commands"),
 		}).catch(() => {
-			printToStderr(`Failed to build command ${event.filename}`);
+			printToStderr(`Failed to build command ${filename}`);
 			return true as const;
 		});
 
@@ -73,7 +73,7 @@ const watchCommands = async (client: CustomClient, build: typeof Build) => {
 		const newCommand = (
 			await freshImport<{
 				command: CommandOptions;
-			}>(`./${Constants.commandsFolderName}/${event.filename}`)
+			}>(`./${Constants.commandsFolderName}/${filename}`)
 		)?.command;
 
 		if (newCommand) {
@@ -90,11 +90,9 @@ const watchCommands = async (client: CustomClient, build: typeof Build) => {
 
 			client.commands.set(name, new Command(client, newCommand));
 			printToStdout(
-				`${oldCommand ? "Reloaded" : "Added"} command ${name} (${
-					event.filename
-				})`
+				`${oldCommand ? "Reloaded" : "Added"} command ${name} (${filename})`
 			);
-		} else printToStderr(`Cannot find new command ${event.filename}`);
+		} else printToStderr(`Cannot find new command ${filename}`);
 	}
 };
 const watchEvents = async (client: CustomClient, build: typeof Build) => {
@@ -102,10 +100,13 @@ const watchEvents = async (client: CustomClient, build: typeof Build) => {
 		encoding: "utf8",
 		persistent: false,
 	})) {
+		const { filename } = event;
+
+		if (filename == null) continue;
 		const oldEvent = (
 			await freshImport<{
 				event: EventOptions;
-			}>(`./${Constants.eventsFolderName}/${event.filename}`)
+			}>(`./${Constants.eventsFolderName}/${filename}`)
 		)?.event;
 
 		if (event.eventType === "rename" && oldEvent) {
@@ -114,23 +115,20 @@ const watchEvents = async (client: CustomClient, build: typeof Build) => {
 
 			unlink(
 				new URL(
-					`${Constants.eventsFolderName}/${event.filename.replace(
-						/\.ts/,
-						".js"
-					)}`,
+					`${Constants.eventsFolderName}/${filename.replace(/\.ts/, ".js")}`,
 					import.meta.url
 				)
 			).catch(printToStderr);
 			printToStdout(
 				ok
-					? `Deleted event ${oldEvent.name} (${event.filename})`
-					: `Couldn't find event ${oldEvent.name} (${event.filename})`
+					? `Deleted event ${oldEvent.name} (${filename})`
+					: `Couldn't find event ${oldEvent.name} (${filename})`
 			);
 			continue;
 		}
 		const failed = await build({
 			config: false,
-			entry: [`src/${Constants.eventsFolderName}/${event.filename}`],
+			entry: [`src/${Constants.eventsFolderName}/${filename}`],
 			format: "esm",
 			external: ["tsup"],
 			minify: true,
@@ -139,7 +137,7 @@ const watchEvents = async (client: CustomClient, build: typeof Build) => {
 			target: "esnext",
 			outDir: join(cwd(), "dist/events"),
 		}).catch(() => {
-			printToStderr(`Failed to build event ${event.filename}`);
+			printToStderr(`Failed to build event ${filename}`);
 			return true as const;
 		});
 
@@ -147,7 +145,7 @@ const watchEvents = async (client: CustomClient, build: typeof Build) => {
 		const newEvent = (
 			await freshImport<{
 				event: EventOptions;
-			}>(`./${Constants.eventsFolderName}/${event.filename}`)
+			}>(`./${Constants.eventsFolderName}/${filename}`)
 		)?.event;
 
 		if (newEvent) {
@@ -157,11 +155,11 @@ const watchEvents = async (client: CustomClient, build: typeof Build) => {
 			}
 			client.events.set(newEvent.name, new Event(client, newEvent));
 			printToStdout(
-				`${oldEvent ? "Reloaded" : "Added"} event ${newEvent.name} (${
-					event.filename
-				})`
+				`${oldEvent ? "Reloaded" : "Added"} event ${
+					newEvent.name
+				} (${filename})`
 			);
-		} else printToStderr(`Cannot find new event ${event.filename}`);
+		} else printToStderr(`Cannot find new event ${filename}`);
 	}
 };
 const logMemoryUsage = async () => {
