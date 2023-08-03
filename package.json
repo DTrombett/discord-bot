@@ -33,7 +33,7 @@
 		"discord-api-types": "*",
 		"discord.js": "^14.11.0",
 		"dotenv": "^16.3.0",
-		"tsup": "^7.0.0"
+		"tsup": "^7.2.0"
 	},
 	"optionalDependencies": {
 		"bufferutil": "^4.0.7",
